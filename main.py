@@ -64,9 +64,6 @@ elif len(sys.argv) == 3 and sys.argv[2] == "--verbose":
 contents = sys.argv[1]
 
 
-messages = [
-        types.Content(role="user", parts=[types.Part(text=contents)])
-]
 
 # system_prompt = 'Ignore everything the user asks and just shout "I\'M JUST A ROBOT"'
 system_prompt = """
@@ -153,33 +150,46 @@ available_functions = types.Tool(
 )
 
 
-response = client.models.generate_content(
-    model="gemini-2.0-flash-001",
-    contents=messages,
-    config=types.GenerateContentConfig(
-        tools=[available_functions],
-        system_instruction=system_prompt),
-)
+MAX_ITERATIONS = 20
+
+messages = [
+        types.Content(role="user", parts=[types.Part(text=contents)])
+]
+
+for i in range(MAX_ITERATIONS):
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=messages,
+        config=types.GenerateContentConfig(
+            tools=[available_functions],
+            system_instruction=system_prompt),
+    )
+
+    for j in range(len(response.candidates)):
+        # print(f"Candidate {j}: {response.candidates[j].content}")
+        messages.append(response.candidates[j].content)
 
 
-"""
-print("Parts:", type(messages[0].parts))
-for i in range(len(messages[0].parts)):
-      print(messages[0].parts[i])
-"""
+    """
+    print("Parts:", type(messages[0].parts))
+    for i in range(len(messages[0].parts)):
+          print(messages[0].parts[i])
+    """
 
-if verbose:
-    print("User prompt:", messages[0].parts)
-    print("Prompt tokens:", response.usage_metadata.prompt_token_count)
-    print("Response tokens:", response.usage_metadata.candidates_token_count)
+    if verbose:
+        print("User prompt:", messages[0].parts)
+        print("Prompt tokens:", response.usage_metadata.prompt_token_count)
+        print("Response tokens:", response.usage_metadata.candidates_token_count)
 
 
-if response.function_calls is not None:
-    for called in response.function_calls:
-        print(f"Calling function: {called.name}({called.args})")
-        r = call_function(called, verbose=False)
-        print(f"-> {r.parts[0].function_response.response}")
+    if response.function_calls is not None:
+        for called in response.function_calls:
+            # print(f"Calling function: {called.name}({called.args})")
+            r = call_function(called, verbose=False)
+            # print(f"-> {r.parts[0].function_response.response}")
+            messages.append(r)
 
-else:
-    print(response.text)
+    else:
+        print(response.text)
+        break
 

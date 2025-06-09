@@ -2,6 +2,9 @@ import os
 
 def get_files_info(working_directory, directory=None):
     print(f"Working directory: {working_directory} Directory: {directory}\n")
+
+    if directory is None:
+        directory = "."
     dir = os.path.join(working_directory, directory)
     if not os.path.isdir(dir):
         return f'Error: "{directory}" is not a directory'
@@ -22,9 +25,12 @@ def get_files_info(working_directory, directory=None):
     
     """
 
+    files_info = []
     with os.scandir(dir) as d:
         for entry in d:
-            result += f"- {entry.name}: file_size={entry.stat().st_size} bytes, is_dir={entry.is_dir()}\n"
+            files_info.append(
+                f"- {entry.name}: file_size={entry.stat().st_size} bytes, is_dir={entry.is_dir()}"
+            )
 
 
-    return result
+    return "\n".join(files_info)
